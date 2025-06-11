@@ -1,48 +1,59 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog"
+	"github.com/spf13/viper"
 )
 
-type DBConfig struct {
-	User     string `json:"user"`
-	Password string `json:"password"`
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	DBName   string `json:"dbname"`
+var (
+	config *Config
+)
+
+type Config struct {
+	App App
+	DB  DB
 }
 
-func InitConfig(logger zerolog.Logger) (dsn string, err error) {
-	var config struct {
-		DB DBConfig `json:"db"`
-	}
+type App struct {
+	Port string
+}
 
-	file, err := os.Open("config/config.json")
+type DB struct {
+	Dsn string
+}
+
+func InitConfig() (*Config, error) {
+	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+	viper.AddConfigPath("config")
+
+	err := viper.ReadInConfig()
 	if err != nil {
-		logger.Error().Err(err).Msg("error pening 'config.json' file")
-		return "", err
+		logger.Error().Err(err).Msg("error reading config file")
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
-	defer file.Close()
 
-	data, err := io.ReadAll(file)
+	config = &Config{}
+	err = viper.Unmarshal(&config)
 	if err != nil {
-		logger.Error().Err(err).Msg("error reading file contents")
-		return "", err
+		logger.Error().Err(err).Msg("unable to decode into struct")
+		return nil, fmt.Errorf("unable to decode into struct: %w", err)
 	}
 
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		logger.Error().Err(err).Msg("error unmarshaling data to config")
-		return "", err
-	}
+	viper.WatchConfig()
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		logger.Info().Msgf("Config file changed: %s", in.Name)
+		err = viper.Unmarshal(&config)
+		if err != nil {
+			logger.Error().Err(err).Msg("unable to decode into struct")
+		}
+	})
 
-	dsn = fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-		config.DB.User, config.DB.Password, config.DB.Host, config.DB.Port, config.DB.DBName)
-
-	return dsn, nil
+	return config, nil
 }
