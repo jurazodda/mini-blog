@@ -2,10 +2,10 @@ package config
 
 import (
 	"fmt"
-	"os"
+	"log"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
 
@@ -14,44 +14,47 @@ var (
 )
 
 type Config struct {
-	App App
 	DB  DB
-}
-
-type App struct {
-	Port string
+	App App
+	Jwt Jwt
 }
 
 type DB struct {
 	Dsn string
 }
 
-func InitConfig() (*Config, error) {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+type App struct {
+	Port string
+}
 
+type Jwt struct {
+	TokenTTL   time.Duration
+	SigningKey string
+}
+
+func Get() Config {
+	return *config
+}
+
+func InitConfig() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	viper.AddConfigPath("config")
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		logger.Error().Err(err).Msg("error reading config file")
+	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
 	config = &Config{}
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		logger.Error().Err(err).Msg("unable to decode into struct")
+	if err := viper.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("unable to decode into struct: %w", err)
 	}
 
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		logger.Info().Msgf("Config file changed: %s", in.Name)
-		err = viper.Unmarshal(&config)
-		if err != nil {
-			logger.Error().Err(err).Msg("unable to decode into struct")
+		log.Println("Config file changed", in.Name)
+		if err := viper.Unmarshal(&config); err != nil {
+			log.Printf("unable to decode into struct: %v", err)
 		}
 	})
 
