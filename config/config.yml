@@ -1,7 +1,5 @@
-db:
-  dsn: "host=localhost user=postgres password=postgres dbname=mini-blog port=6543 sslmode=disable"
 app:
   port: ":8080"
 jwt:
   tokenttl: 12
-  signingkey: "jfsgvkje9o9309-30"
+  

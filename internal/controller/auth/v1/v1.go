@@ -2,14 +2,14 @@ package v1
 
 import (
 	"mini-blog/internal/service"
+	"mini-blog/pkg/logger"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
 )
 
 type AuthHandlerV1 struct {
-	Service service.Service
-	Logger  zerolog.Logger
+	Service service.ServiceI
+	Logger  *logger.Logger
 }
 
 func (h *AuthHandlerV1) InitRoutes(r *gin.Engine) {

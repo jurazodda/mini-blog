@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"mini-blog/internal/controller"
 	"mini-blog/internal/service"
 	"net/http"
 
@@ -8,25 +9,19 @@ import (
 )
 
 func (h *AuthHandlerV1) SignUp(c *gin.Context) {
-	in := struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}{}
+	var in service.SignUpIn
 
 	err := c.BindJSON(&in)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed signup"})
+		h.Logger.Error().Str("method", "SignUp").Err(err).Msg("failed bind json")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = h.Service.SignUp(c, service.SignUpIn{
-		Username: in.Username,
-		Email:    in.Email,
-		Password: in.Password,
-	})
+	err = h.Service.SignUp(c, in)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error"})
+		h.Logger.Error().Str("method", "SignUp").Err(err).Msg("failed signup user")
+		controller.HandleError(c, err)
 		return
 	}
 
@@ -34,32 +29,23 @@ func (h *AuthHandlerV1) SignUp(c *gin.Context) {
 }
 
 func (h *AuthHandlerV1) SignIn(c *gin.Context) {
-	logger :=  h.Logger.With().Str("method", "SignIn").Logger()
-
-	in := struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}{}
-
+	var in service.SignInIn
 	err := c.BindJSON(&in)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed bind json")
+		h.Logger.Error().Err(err).Msg("failed bind json")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := h.Service.SignIn(c, service.SignInIn{
-		Email:    in.Email,
-		Password: in.Password,
-	})
+	user, err := h.Service.SignIn(c, in)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed signin user")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error"})
+		h.Logger.Error().Err(err).Msg("failed signin user")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-
-	token, err := h.GenerateToken(c, user.ID)
+	token, err := service.GenerateToken(c, user.ID)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed generate token")
+		h.Logger.Error().Err(err).Msg("failed generate token")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}

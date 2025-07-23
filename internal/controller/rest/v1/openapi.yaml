@@ -1,0 +1,482 @@
+openapi: 3.0.3
+info:
+  title: Mini Blog REST API
+  version: 1.0.0
+  description: REST API для постов, комментариев, лайков и репостов
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Posts
+    description: Операции с постами
+  - name: Comments
+    description: Операции с комментариями
+  - name: Likes
+    description: Операции с лайками
+  - name: Reposts
+    description: Операции с репостами
+
+paths:
+  /v1/posts:
+    get:
+      summary: Получить список постов
+      tags:
+        - Posts
+      responses:
+        '200':
+          description: Список постов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostListItem'
+        '500':
+          description: Внутренняя ошибка сервера
+    post:
+      summary: Создать пост
+      tags:
+        - Posts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Пост создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Ошибка валидации
+        '401':
+          description: Неавторизован
+        '500':
+          description: Внутренняя ошибка сервера
+  /v1/posts/{id}:
+    get:
+      summary: Получить пост по ID
+      tags:
+        - Posts
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Пост
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '404':
+          description: Пост не найден
+        '401':
+          description: Неавторизован
+        '500':
+          description: Внутренняя ошибка сервера
+    put:
+      summary: Обновить пост
+      tags:
+        - Posts
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: Пост обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Ошибка валидации
+        '401':
+          description: Неавторизован
+        '403':
+          description: Нет доступа
+        '404':
+          description: Пост не найден
+        '500':
+          description: Внутренняя ошибка сервера
+    delete:
+      summary: Удалить пост
+      tags:
+        - Posts
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Пост удалён
+        '401':
+          description: Неавторизован
+        '403':
+          description: Нет доступа
+        '404':
+          description: Пост не найден
+        '500':
+          description: Внутренняя ошибка сервера
+  /v1/posts/{postId}/comments:
+    get:
+      summary: Получить комментарии к посту
+      tags:
+        - Comments
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список комментариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommentResponse'
+        '404':
+          description: Пост не найден
+        '500':
+          description: Внутренняя ошибка сервера
+    post:
+      summary: Добавить комментарий к посту
+      tags:
+        - Comments
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Комментарий создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '400':
+          description: Ошибка валидации
+        '401':
+          description: Неавторизован
+        '404':
+          description: Пост не найден
+        '500':
+          description: Внутренняя ошибка сервера
+  /v1/comments/{id}:
+    put:
+      summary: Обновить комментарий
+      tags:
+        - Comments
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommentRequest'
+      responses:
+        '200':
+          description: Комментарий обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '400':
+          description: Ошибка валидации
+        '401':
+          description: Неавторизован
+        '403':
+          description: Нет доступа
+        '404':
+          description: Комментарий не найден
+        '500':
+          description: Внутренняя ошибка сервера
+    delete:
+      summary: Удалить комментарий
+      tags:
+        - Comments
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Комментарий удалён
+        '401':
+          description: Неавторизован
+        '403':
+          description: Нет доступа
+        '404':
+          description: Комментарий не найден
+        '500':
+          description: Внутренняя ошибка сервера
+  /v1/posts/{id}/like:
+    post:
+      summary: Лайк/анлайк поста (toggle)
+      tags:
+        - Likes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Лайк убран
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeToggleResponse'
+        '201':
+          description: Лайк поставлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeToggleResponse'
+        '401':
+          description: Неавторизован
+        '404':
+          description: Пост не найден
+        '500':
+          description: Внутренняя ошибка сервера
+  /v1/comments/{id}/like:
+    post:
+      summary: Лайк/анлайк комментария (toggle)
+      tags:
+        - Likes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Лайк убран
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeToggleResponse'
+        '201':
+          description: Лайк поставлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeToggleResponse'
+        '401':
+          description: Неавторизован
+        '404':
+          description: Комментарий не найден
+        '500':
+          description: Внутренняя ошибка сервера
+  /v1/reposts:
+    get:
+      summary: Получить все репосты
+      tags:
+        - Reposts
+      responses:
+        '200':
+          description: Список репостов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RepostResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+    post:
+      summary: Создать репост
+      tags:
+        - Reposts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRepostRequest'
+      responses:
+        '201':
+          description: Репост создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepostResponse'
+        '400':
+          description: Ошибка валидации
+        '401':
+          description: Неавторизован
+        '404':
+          description: Пост не найден
+        '500':
+          description: Внутренняя ошибка сервера
+components:
+  schemas:
+    CreatePostRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        image_url:
+          type: string
+    UpdatePostRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        image_url:
+          type: string
+    PostResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        image_url:
+          type: string
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+        likes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LikeResponse'
+    PostListItem:
+      type: object
+      properties:
+        post_id:
+          type: integer
+        user_id:
+          type: integer
+        title:
+          type: string
+        comments:
+          type: integer
+        likes:
+          type: integer
+    CreateCommentRequest:
+      type: object
+      required:
+        - comment
+      properties:
+        comment:
+          type: string
+    UpdateCommentRequest:
+      type: object
+      required:
+        - comment
+      properties:
+        comment:
+          type: string
+    CommentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        post_id:
+          type: integer
+        user_id:
+          type: integer
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    LikeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        post_id:
+          type: integer
+        comment_id:
+          type: integer
+    LikeToggleResponse:
+      type: object
+      properties:
+        is_liked:
+          type: boolean
+        message:
+          type: string
+    CreateRepostRequest:
+      type: object
+      required:
+        - post_id
+      properties:
+        post_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+    RepostResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        post_id:
+          type: integer
+        user_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        image_url:
+          type: string
+        comments:
+          type: integer
+        likes:
+          type: integer 

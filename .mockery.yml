@@ -1,0 +1,4 @@
+packages:
+  mini-blog/internal/repository:
+    interfaces:
+      RepositoryI: {}

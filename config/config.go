@@ -14,13 +14,8 @@ var (
 )
 
 type Config struct {
-	DB  DB
 	App App
 	Jwt Jwt
-}
-
-type DB struct {
-	Dsn string
 }
 
 type App struct {
@@ -29,7 +24,6 @@ type App struct {
 
 type Jwt struct {
 	TokenTTL   time.Duration
-	SigningKey string
 }
 
 func Get() Config {
@@ -59,4 +53,8 @@ func InitConfig() (*Config, error) {
 	})
 
 	return config, nil
+}
+
+func Set(cfg *Config) {
+	config = cfg
 }

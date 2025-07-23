@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     container_name: mini_blog_postgres
     environment:
       POSTGRES_DB: mini-blog
